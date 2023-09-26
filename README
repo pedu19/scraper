@@ -1,0 +1,49 @@
+
+
+Fetch from https://app.pasapay.com/api/v1/sellers/daraz.json
+
+[
+  {
+    "seller": "laibary",
+    "daraz_url": "https://www.daraz.co.np/laibary"
+  },
+  {
+    "seller": "vayu",
+    "daraz_url": "https://www.daraz.co.np/vayu"
+  },
+  {
+    "seller": "banba",
+    "daraz_url": "https://www.daraz.co.np/banba"
+  }
+]
+
+
+Loop through and fetch
+  Start with library
+    -> then scrape each product page you find
+    Finish
+  Start with vayu
+    -> then scrape each product page you find
+    Finish
+  Start with banba
+    -> then scrape each product page you find
+    Finish
+
+
+
+# Setup
+
+### Start docker locally
+
+docker-compose -f docker-compose.dev.yaml up
+
+### Start your web server
+
+bundle exec rerun 'rackup'  #Allows for fast reloading
+
+http://localhost:9292/scrape
+
+### Start sidekiq 
+
+bundle exec sidekiq -r ./app.rb -C ./config/sidekiq.yml
+

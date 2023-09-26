@@ -1,0 +1,14 @@
+require_relative 'scrape_daraz'
+require "pry"
+class ScrapeDarazFullpageWorker
+  include Sidekiq::Worker
+  def perform(input)
+    # @seller = Seller.find(seller_id)
+    # @daraz_url = input
+    binding.pry
+    @scrape_daraz = ScrapeDaraz.new(input)
+    ScrapeDaraz.visit_full_page(@daraz_url)
+    # if @daraz_url.present?
+    # end
+  end
+end

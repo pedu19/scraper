@@ -1,0 +1,39 @@
+version: '3.5'
+services:
+  redis:
+    image: redis:4.0.5-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: redis  
+  chrome:
+    image: selenium/node-chrome:latest
+    volumes:
+      - /dev/shm:/dev/shm
+    depends_on:
+      - selenium
+    environment: &SELENIUM_NODE_ENV
+      # this is a necessary workaround due to a known bug
+      # https://github.com/SeleniumHQ/docker-selenium/issues/133
+      HUB_PORT_4444_TCP_ADDR: 127.0.0.1
+      HUB_PORT_4444_TCP_PORT: 4444
+      HUB_HOST: 127.0.0.1
+      NODE_MAX_INSTANCES: 15
+      GRID_DEBUG: "true"
+      CHROME_ADDITIONAL_ARGS: --ignore-certificate-errors
+    ports:
+      - 5901
+    network_mode: host            
+  selenium:
+    image: selenium/hub:latest    
+    volumes:
+      - /dev/shm:/dev/shm
+    privileged: true
+    userns_mode: "host"
+    environment:
+      GRID_JETTY_MAX_THREADS: -1
+      GRID: "true"
+      GRID_DEBUG: "true"
+      NOVNC: "false"
+      VNC_START: "false"
+    ports:
+      - 4444
+    network_mode: host

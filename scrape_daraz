@@ -1,0 +1,64 @@
+require "open-uri"
+require "nokogiri"
+require "pry"
+require 'sinatra'
+require "selenium-webdriver"
+require "sanitize"
+require "webdrivers"
+require_relative 'scrape_daraz_singlepage_worker'
+class ScrapeDaraz 
+  attr_reader :daraz_url, :url
+  def initialize( daraz_url)
+    @daraz_url = daraz_url
+  end
+  def visit_full_page(daraz_url)
+    # binding.pry
+    @driver = Selenium::WebDriver.for :chrome
+    @driver.get daraz_url.to_s
+    @wait = Selenium::WebDriver::Wait.new(timeout: 20)
+    len_of_page = @driver.execute_script("window.scrollTo(0, len_of_page =
+      (document.body.scrollHeight)); return len_of_page")
+    match = false
+    while match == false
+      last_count = len_of_page
+      sleep(3)
+      len_of_page = @driver.execute_script("window.scrollTo(0, len_of_page =
+        (document.body.scrollHeight)); return len_of_page")
+      if last_count == len_of_page
+        match = true
+      end
+    end
+    # puts "Total length of page is: #{len_of_page}"
+    @urls = []
+    @doc = Nokogiri::HTML(open(daraz_url.to_s))
+    @json_string = @doc.xpath("//script [@type = 'application/ld+json']").map(&:text)
+    @json_data = JSON.parse(@json_string[1])
+    list_item = @json_data["itemListElement"]
+    list_item.each do |li|
+      @urls = li["url"]
+      ScrapeDarazWorker.perform_async(seller_id, @urls)
+      # puts @urls.to_s
+    end
+    @driver.quit
+  end
+
+  def visit_single_page(url)
+    # binding.pry
+    @doc = Nokogiri::HTML(open(url.to_s))
+    @json_string = @doc.xpath("//script [@type = 'application/ld+json']").map(&:text)
+    @json_data = JSON.parse(@json_string[0])
+    @title = @json_data["name"]
+    @shop_name = @json_data["offers"]["seller"]["name"]
+    @price = @json_data["offers"]["lowPrice"]
+    @quantity = @json_data["offers"]["inventoryLevel"].present? ? @json_data["offers"]["inventoryLevel"]["value"] : 0
+    @image = @json_data["image"]
+    @description = Sanitize.fragment(@json_data["description"], Sanitize::Config::RESTRICTED)
+    # @product = Product.create!(seller_id: seller_id,
+    #                            title: @title,
+    #                            description: @description,
+    #                            price: @price,
+    #                            quantity: @quantity)
+    # @product.product_attachments.create!(alt_text: File.basename(@image),
+    #                                      image: @image)
+  end
+end
